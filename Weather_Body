@@ -11,7 +11,7 @@ if os.path.exists(os.getcwd()+'/weather_cities') == False:
 class Weather:
 	def __init__(self, x=None, api=None, url=False):
 		self.__x = x
-		self.__api = "a35929dce8496bd594a3d701bf642337" # api
+		self.__api = # api
 		self.__main_sities = ['Tokio', 'Moscow', 'New York', 'London', 'Berlin', 'Pekin', 'Jerusalem']
 		self.__url = f"https://api.openweathermap.org/data/2.5/" if url == False else url
 	def start(self):
