@@ -1,61 +1,80 @@
 import requests
-import json
-from degree import dgr_chr
-import os
 from datetime import datetime as dt
 import time
-
-if os.path.exists(os.getcwd()+'/weather_cities') == False:
-	os.mkdir(os.getcwd()+'/weather_cities') 
+import os
 
 class Weather:
-	def __init__(self, x=None, api=None, url=False):
+	"""
+	Takes a 3 values: x - city name, mode - weather forecast mode (current and 5 days(per days)) and
+	api.
+	To use Weather - put in class like this - > 
+	Exemplar = Weather('London', '5 days')
+
+	Also you can use named keys like this - >
+	Exemplar = Weather(x='London', mode='5 days')
+	"""
+	def __init__(self, x=None, mode='current', api=None):
 		self.__x = x
-		self.__api = # api
-		self.__main_sities = ['Tokio', 'Moscow', 'New York', 'London', 'Berlin', 'Pekin', 'Jerusalem']
-		self.__url = f"https://api.openweathermap.org/data/2.5/" if url == False else url
-	def start(self):
-		responce = requests.get(self.__url+f'forecast?q={self.__x}&appid={self.__api}')
-		
-		if responce.status_code == 200 and self.__x:
-			with open("responce.json","w") as file:
-				obj = json.loads(responce.text)
-				json.dump(obj,file)
-		else:
+		self.__api = "fde841fe0d3fdac9babcf624c70c320b" if api is None else api
+		self.__mode = mode.lower()
+		self.__mods = {
+				'current':f'https://api.openweathermap.org/data/2.5/weather?q={self.__x}&appid={self.__api}',
+				'5 days':f'https://api.openweathermap.org/data/2.5/forecast?q={self.__x}&appid={self.__api}',
+				}
+		self.__main_cities = [
+			'Tokio', 
+			'Moscow', 
+			'New York', 
+			'London', 
+			'Berlin', 
+			'Pekin', 
+			'Jerusalem'
+			]
+		try:
+			self.__url = self.__mods.get(mode)
+		except(NameError) as err:
+			print('Error!', err)
 			raise NameError
-		
-		with open("responce.json") as wee:
-			obj = json.load(wee)
-		adress = os.getcwd()+f'/weather_cities/{self.__x} - {dt.now().date()}.txt'
 
-		with open(adress,"w") as file:
-			file.write(self.__x+"\n\n")
-			for k,i in enumerate(obj.get("list")):
-				temps = dgr_chr(i.get("main").get("temp"))
-				dts = i.get("dt_txt")
-				print(f"{temps}C",*dts.split(),sep=" - ",file=file)
-		return adress
-	
-	def main_city(self):
-		for i in self.__main_sities:
-			name = i
-			responce = requests.get(self.__url+f'forecast?q={i}&appid={self.__api}')
+	def giveforecast(self):
+		"""
+		Return weather to the requared city. Create a txt file with results.
+		"""
+		try:
+			responce = requests.get(self.__url, params={'units':'metric'})
+		except(TimeoutError, ConnectionError) as err:
+			print('Cant connect to server.', err)
+
+		data_json = responce.json()
+		if self.__mode == 'current' and responce.status_code == 200:
+			return (data_json['main']['temp'], dt.fromtimestamp(data_json['dt']))
+		if self.__mode == '5 days' and responce.status_code == 200:
+			return ((i['main']['temp'], i['dt_txt']) for i in data_json['list'])
+		elif responce.status_code != 200:
+			print('Error', responce.status_code)
+
+	def main_cities(self, mode=None):
+		mode = self.__mode if mode == None else mode
+		data_main_cities = self.__main_cities
+		for i in data_main_cities:
 			time.sleep(1)
-			
-			if responce.status_code == 200 and name:
-				with open("responce.json","w") as file:
-					obj = json.loads(responce.text)
-					json.dump(obj,file)
-			else:
-				raise NameError
-			
-			with open("responce.json") as wee:
-				obj = json.load(wee)
-			adress = os.getcwd()+f'/weather_cities/{name} - {dt.now().date()}.txt'
+			try:
+				data_url = self.__mods[mode].replace(self.__x, i)
+				responce = requests.get(data_url, params={'units':'metric'})
+			except(TimeoutError, ConnectionError) as err:
+				print('Cant connect to server.', err)
+			if mode.lower() == '5 days':
+				yield i, ((x['main']['temp'], x['dt_txt']) for x in responce.json()['list'])
+			if mode.lower() == 'current':
+				yield (i, responce.json()['main']['temp'], dt.fromtimestamp(responce.json()['dt']))
 
-			with open(adress,"w") as file:
-				file.write(name+"\n\n")
-				for k,i in enumerate(obj.get("list")):
-					temps = dgr_chr(i.get("main").get("temp"))
-					dts = i.get("dt_txt")
-					print(f"{temps}C",*dts.split(),sep=" - ",file=file)
+class Save():
+	'''
+	Saving the result in txt file and create the dir if not exists and put the file into new dir.
+	'''
+	def save_result(self, city, result):
+		if os.path.exists(os.getcwd()+'\cities') == False:
+			os.mkdir(os.getcwd()+'\cities')
+		with open(os.getcwd()+f"\cities\{city} {dt.today().strftime('%Y-%m-%d %H-%M-%S')}.txt", 'w', encoding='utf-8') as weFile:
+			weFile.write(city+'\n\n')
+			weFile.write(result)
