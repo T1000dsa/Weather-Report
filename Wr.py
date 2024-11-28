@@ -41,7 +41,7 @@ class Weather:
 		Return weather to the requared city. Create a txt file with results.
 		"""
 		try:
-			responce = requests.get(self.__url, params={'units':'metric'})
+			responce = requests.get(self.__url, params={'units':'metric'}, headers={'User-Agent':'My User Agent 1.0'})
 		except(TimeoutError, ConnectionError) as err:
 			print('Cant connect to server.', err)
 
@@ -60,7 +60,7 @@ class Weather:
 			time.sleep(1)
 			try:
 				data_url = self.__mods[mode].replace(self.__x, i)
-				responce = requests.get(data_url, params={'units':'metric'})
+				responce = requests.get(data_url, params={'units':'metric'}, headers={'User-Agent':'My User Agent 1.0'})
 			except(TimeoutError, ConnectionError) as err:
 				print('Cant connect to server.', err)
 			if mode.lower() == '5 days':
